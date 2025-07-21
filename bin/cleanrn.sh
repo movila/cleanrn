@@ -121,6 +121,7 @@ remove_item() {
             echo "  Removing: $item"
         fi
         if rm -rf "$item" 2>/dev/null; then
+            cleaned_list+=("$item")
             return 0
         else
             if [ "$VERBOSE" = true ]; then
@@ -195,6 +196,7 @@ print_status "Starting React Native project cleanup..."
 
 # Track what was actually cleaned
 cleaned_items=0
+cleaned_list=()
 
 # 1. Remove node_modules and lock files
 echo "🧹 Cleaning dependencies..."
@@ -225,6 +227,7 @@ if command -v watchman >/dev/null 2>&1; then
         echo "  Clearing watchman watches..."
     fi
     if watchman watch-del-all >/dev/null 2>&1; then
+        cleaned_list+=("Watchman watches")
         ((cleaned_items++))
     fi
 else
@@ -302,8 +305,14 @@ if [ $cleaned_items -eq 0 ]; then
     print_warning "No items were found to clean. Project might already be clean!"
 else
     print_success "Cleaned $cleaned_items items. Project is ready for distribution or fresh install."
+    echo
+    echo "📋 Items that were cleaned:"
+    for item in "${cleaned_list[@]}"; do
+        echo "  • $item"
+    done
 fi
 
+echo
 print_status "Next steps:"
 echo "  • Run 'npm install' or 'yarn install' to restore dependencies"
 echo "  • For iOS: 'cd ios && pod install' (if using CocoaPods)"
