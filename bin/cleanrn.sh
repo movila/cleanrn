@@ -6,28 +6,34 @@
 
 set -e  # Exit on any error
 
-# Color codes for better output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# Color codes for enhanced output
 BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
+# Emoji-based output functions with optional colors
 print_status() {
     echo -e "${BLUE}🔧${NC} $1"
 }
 
 print_success() {
-    echo -e "${GREEN}✅${NC} $1"
+    echo "✅ $1"
 }
 
 print_error() {
-    echo -e "${RED}❌${NC} $1"
+    echo "❌ $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️${NC} $1"
+    echo "⚠️ $1"
+}
+
+# Colored section headers for dry-run
+print_section() {
+    echo -e "${CYAN}$1${NC}"
 }
 
 # Function to show help
@@ -129,20 +135,20 @@ if [ "$DRY_RUN" = true ]; then
     cat <<EOF
 🧪 Dry run: The following items will be removed if they exist:
 
-📁 Dependencies & Cache:
+$(print_section "📁 Dependencies & Cache:")
   - node_modules/
   - \$TMPDIR/metro-*
   - yarn.lock (if using npm)
   - package-lock.json (if using yarn)
 
-📱 iOS artifacts:
+$(print_section "📱 iOS artifacts:")
   - ios/build/
   - ios/Pods/
   - ios/Podfile.lock
   - ios/DerivedData/
   - ios/.xcode.env.local
 
-🤖 Android artifacts:
+$(print_section "🤖 Android artifacts:")
   - android/.gradle/
   - android/app/build/
   - android/build/
@@ -150,7 +156,7 @@ if [ "$DRY_RUN" = true ]; then
   - android/local.properties
   - android/app/src/main/assets/index.android.bundle
 
-🧹 General cleanup:
+$(print_section "🧹 General cleanup:")
   - *.log
   - npm-debug.log*
   - yarn-debug.log*
@@ -185,7 +191,7 @@ print_status "Starting React Native project cleanup..."
 cleaned_items=0
 
 # 1. Remove node_modules and lock files
-print_status "Cleaning dependencies..."
+echo "🧹 Cleaning dependencies..."
 if remove_item "node_modules" "Node modules"; then
     ((cleaned_items++))
 fi
@@ -196,7 +202,7 @@ if [ -f "yarn.lock" ] && [ -f "package-lock.json" ]; then
 fi
 
 # 2. Clean cache
-print_status "Cleaning cache..."
+echo "🧹 Cleaning cache..."
 if [ -n "$TMPDIR" ]; then
     for metro_cache in "$TMPDIR"/metro-*; do
         if [ -d "$metro_cache" ]; then
@@ -219,7 +225,7 @@ fi
 
 # 3. iOS cleanup
 if [ -d "ios" ]; then
-    print_status "Cleaning iOS artifacts..."
+    echo "🧹 Cleaning iOS artifacts..."
     ios_items=(
         "ios/build"
         "ios/Pods" 
@@ -237,7 +243,7 @@ fi
 
 # 4. Android cleanup
 if [ -d "android" ]; then
-    print_status "Cleaning Android artifacts..."
+    echo "🧹 Cleaning Android artifacts..."
     android_items=(
         "android/.gradle"
         "android/app/build"
@@ -255,7 +261,7 @@ if [ -d "android" ]; then
 fi
 
 # 5. General cleanup
-print_status "Cleaning logs and miscellaneous files..."
+echo "🧹 Cleaning logs and miscellaneous files..."
 general_items=(
     "coverage"
     ".nyc_output"
