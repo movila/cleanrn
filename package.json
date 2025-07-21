@@ -1,15 +1,56 @@
 {
-  "name": "cleanrn",
-  "version": "1.0.0",
-  "description": "React Native project cleaner",
+  "name": "@movila/cleanrn",
+  "version": "1.1.0",
+  "description": "A lightweight CLI tool to clean React Native project artifacts quickly and safely",
+  "main": "cleanrn.sh",
   "bin": {
-    "cleanrn": "./index.js"
+    "cleanrn": "./cleanrn.sh"
   },
-  "files": [
-    "bin",
-    "index.js"
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react-native",
+    "clean",
+    "cli",
+    "build",
+    "cache",
+    "artifacts",
+    "metro",
+    "ios",
+    "android",
+    "node-modules",
+    "gradle",
+    "xcode",
+    "pods",
+    "cleanup",
+    "developer-tools"
   ],
-  "keywords": ["react-native", "clean", "cache", "cli"],
+  "author": {
+    "name": "movila",
+    "url": "https://github.com/movila"
+  },
   "license": "MIT",
-  "author": "movila"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movila/cleanrn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/movila/cleanrn/issues"
+  },
+  "homepage": "https://github.com/movila/cleanrn#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "preferGlobal": true,
+  "files": [
+    "cleanrn.sh",
+    "README.md",
+    "LICENSE"
+  ]
 }
