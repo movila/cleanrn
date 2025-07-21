@@ -2,81 +2,293 @@
 # cleanrn.sh - A lightweight script to clean React Native project artifacts.
 # Author: movila
 # GitHub: https://github.com/movila/cleanrn
-# Version: 1.0.0
-if [ ! -f "package.json" ] || ! grep -q "react-native" package.json; then
-  echo "❌ Not a React Native project (no package.json or react-native dependency found)."
-  exit 1
+# Version: 1.1.0
+
+set -e  # Exit on any error
+
+# Color codes for better output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}🔧${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✅${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}❌${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️${NC} $1"
+}
+
+# Function to show help
+show_help() {
+    cat <<EOF
+cleanrn - Clean React Native project artifacts
+
+USAGE:
+    cleanrn [OPTIONS]
+
+OPTIONS:
+    --dry-run       Show what would be cleaned without actually doing it
+    --force         Skip confirmation prompt
+    --help, -h      Show this help message
+    --version, -v   Show version information
+    --verbose       Show detailed output
+
+EXAMPLES:
+    cleanrn                    # Interactive clean
+    cleanrn --dry-run         # Preview what will be cleaned
+    cleanrn --force           # Clean without confirmation
+    cleanrn --verbose         # Clean with detailed output
+
+EOF
+}
+
+# Function to show version
+show_version() {
+    echo "cleanrn version 1.1.0"
+}
+
+# Parse command line arguments
+DRY_RUN=false
+FORCE=false
+VERBOSE=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --version|-v)
+            show_version
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Use --help for usage information."
+            exit 1
+            ;;
+    esac
+done
+
+# Check if this is a React Native project
+if [ ! -f "package.json" ]; then
+    print_error "No package.json found. Are you in a React Native project directory?"
+    exit 1
 fi
 
-if [[ "$1" == "--dry-run" ]]; then
-  cat <<EOF
-🧪 Dry run: the following will be removed if confirmed:
+if ! grep -q "react-native\|@react-native" package.json; then
+    print_error "This doesn't appear to be a React Native project (no react-native dependency found)."
+    exit 1
+fi
 
+# Function to remove directory/file with verbose output
+remove_item() {
+    local item="$1"
+    local description="$2"
+    
+    if [ -e "$item" ]; then
+        if [ "$VERBOSE" = true ]; then
+            echo "  Removing: $item"
+        fi
+        rm -rf "$item"
+        return 0
+    else
+        if [ "$VERBOSE" = true ]; then
+            echo "  Not found: $item (skipping)"
+        fi
+        return 1
+    fi
+}
+
+# Dry run mode
+if [ "$DRY_RUN" = true ]; then
+    cat <<EOF
+🧪 Dry run: The following items will be removed if they exist:
+
+📁 Dependencies & Cache:
   - node_modules/
   - \$TMPDIR/metro-*
+  - yarn.lock (if using npm)
+  - package-lock.json (if using yarn)
+
+📱 iOS artifacts:
   - ios/build/
   - ios/Pods/
   - ios/Podfile.lock
-  - ios/.xcworkspace
+  - ios/DerivedData/
+  - ios/.xcode.env.local
+
+🤖 Android artifacts:
   - android/.gradle/
   - android/app/build/
   - android/build/
   - android/.idea/
   - android/local.properties
+  - android/app/src/main/assets/index.android.bundle
+
+🧹 General cleanup:
   - *.log
+  - npm-debug.log*
+  - yarn-debug.log*
+  - yarn-error.log*
   - coverage/
+  - .nyc_output/
+  - .expo/
+  - .vscode/settings.json (if exists)
 
 EOF
-exit 0
+    exit 0
 fi
 
-if [[ "$1" != "--force" ]]; then
-  read -p "Are you sure you want to clean this React Native project? (y/N): " confirm
-  if [[ "$confirm" != "y" ]]; then
-    echo "❌ Clean aborted."
-    exit 1
-  fi
+# Confirmation prompt (unless --force is used)
+if [ "$FORCE" != true ]; then
+    echo "This will clean your React Native project by removing:"
+    echo "• Dependencies (node_modules)"
+    echo "• Build artifacts (iOS/Android builds)"
+    echo "• Cache files (Metro, Watchman)"
+    echo "• Log files and coverage reports"
+    echo
+    read -p "Are you sure you want to continue? (y/N): " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        print_warning "Clean operation cancelled."
+        exit 0
+    fi
 fi
 
-echo "🔧 Cleaning React Native project..."
+print_status "Starting React Native project cleanup..."
 
-# 1. Remove node_modules
-echo "🧹 Removing node_modules..."
-rm -rf node_modules
+# Track what was actually cleaned
+cleaned_items=0
 
-# 2. Remove metro, watchman caches (optional)
-echo "🧹 Cleaning cache (metro, watchman)..."
-rm -rf "$TMPDIR"/metro-*
+# 1. Remove node_modules and lock files
+print_status "Cleaning dependencies..."
+if remove_item "node_modules" "Node modules"; then
+    ((cleaned_items++))
+fi
+
+# Handle conflicting lock files
+if [ -f "yarn.lock" ] && [ -f "package-lock.json" ]; then
+    print_warning "Both yarn.lock and package-lock.json found. Consider removing one."
+fi
+
+# 2. Clean cache
+print_status "Cleaning cache..."
+if [ -n "$TMPDIR" ]; then
+    for metro_cache in "$TMPDIR"/metro-*; do
+        if [ -d "$metro_cache" ]; then
+            if remove_item "$metro_cache" "Metro cache"; then
+                ((cleaned_items++))
+            fi
+        fi
+    done
+fi
+
+# Watchman cache
 if command -v watchman >/dev/null 2>&1; then
-  watchman watch-del-all 2>/dev/null
+    if [ "$VERBOSE" = true ]; then
+        echo "  Clearing watchman watches..."
+    fi
+    if watchman watch-del-all >/dev/null 2>&1; then
+        ((cleaned_items++))
+    fi
 fi
 
-# 3. Remove iOS build artifacts
+# 3. iOS cleanup
 if [ -d "ios" ]; then
-  echo "🧹 Cleaning iOS builds, pods..."
-  rm -rf ios/build
-  rm -rf ios/Pods
-  rm -f ios/Podfile.lock
-  rm -rf ios/.xcworkspace
+    print_status "Cleaning iOS artifacts..."
+    ios_items=(
+        "ios/build"
+        "ios/Pods" 
+        "ios/Podfile.lock"
+        "ios/DerivedData"
+        "ios/.xcode.env.local"
+    )
+    
+    for item in "${ios_items[@]}"; do
+        if remove_item "$item" "iOS artifact"; then
+            ((cleaned_items++))
+        fi
+    done
 fi
 
-# 4. Remove Android build artifacts
+# 4. Android cleanup
 if [ -d "android" ]; then
-  echo "🧹 Cleaning Android builds and gradle..."
-  rm -rf android/.gradle
-  rm -rf android/app/build
-  rm -rf android/build
-  rm -rf android/.idea
-  rm -rf android/local.properties
+    print_status "Cleaning Android artifacts..."
+    android_items=(
+        "android/.gradle"
+        "android/app/build"
+        "android/build" 
+        "android/.idea"
+        "android/local.properties"
+        "android/app/src/main/assets/index.android.bundle"
+    )
+    
+    for item in "${android_items[@]}"; do
+        if remove_item "$item" "Android artifact"; then
+            ((cleaned_items++))
+        fi
+    done
 fi
 
-# 5. Optional: Remove logs, coverage
-echo "🧹 Removing logs and coverage..."
-rm -rf coverage
-rm -rf *.log
+# 5. General cleanup
+print_status "Cleaning logs and miscellaneous files..."
+general_items=(
+    "coverage"
+    ".nyc_output"
+    ".expo"
+    "npm-debug.log"
+    "yarn-debug.log" 
+    "yarn-error.log"
+)
 
-echo "✅ Project cleaned. You can now zip or commit safely."
+# Clean up any .log files
+for log_file in *.log; do
+    if [ -f "$log_file" ]; then
+        if remove_item "$log_file" "Log file"; then
+            ((cleaned_items++))
+        fi
+    fi
+done
 
-# Optional zip (uncomment if needed)
-# echo "📦 Zipping project..."
-# zip -r cleaned-project.zip . -x "node_modules/*" "ios/Pods/*" "android/app/build/*" "android/.gradle/*" "*.log" "coverage/*"
+for item in "${general_items[@]}"; do
+    if remove_item "$item" "General cleanup"; then
+        ((cleaned_items++))
+    fi
+done
+
+# Final summary
+echo
+if [ $cleaned_items -eq 0 ]; then
+    print_warning "No items were found to clean. Project might already be clean!"
+else
+    print_success "Cleaned $cleaned_items items. Project is ready for distribution or fresh install."
+fi
+
+print_status "Next steps:"
+echo "  • Run 'npm install' or 'yarn install' to restore dependencies"
+echo "  • For iOS: 'cd ios && pod install' (if using CocoaPods)"
+echo "  • Consider running 'npx react-native start --reset-cache' for a fresh start"
