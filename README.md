@@ -1,4 +1,4 @@
-# cleanrn 🧹
+# @movila/cleanrn 🧹
 
 A lightweight CLI tool to clean React Native project artifacts quickly and safely.
 
@@ -16,12 +16,12 @@ React Native projects accumulate build artifacts, cache files, and dependencies 
 
 ### Global Installation (Recommended)
 ```bash
-npm install -g cleanrn
+npm install -g @movila/cleanrn
 ```
 
 ### One-time Usage (No Installation)
 ```bash
-npx cleanrn
+npx @movila/cleanrn
 ```
 
 ## Usage
