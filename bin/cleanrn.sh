@@ -4,7 +4,7 @@
 # GitHub: https://github.com/movila/cleanrn
 # Version: 1.1.0
 
-set -e  # Exit on any error
+# Removed set -e to allow graceful handling of missing files/directories
 
 # Color codes for enhanced output
 BLUE='\033[0;34m'
@@ -111,7 +111,7 @@ if ! grep -q "react-native\|@react-native" package.json; then
     exit 1
 fi
 
-# Function to remove directory/file with verbose output
+# Function to remove directory/file with better error handling
 remove_item() {
     local item="$1"
     local description="$2"
@@ -120,8 +120,14 @@ remove_item() {
         if [ "$VERBOSE" = true ]; then
             echo "  Removing: $item"
         fi
-        rm -rf "$item"
-        return 0
+        if rm -rf "$item" 2>/dev/null; then
+            return 0
+        else
+            if [ "$VERBOSE" = true ]; then
+                echo "  Warning: Could not remove $item"
+            fi
+            return 1
+        fi
     else
         if [ "$VERBOSE" = true ]; then
             echo "  Not found: $item (skipping)"
@@ -220,6 +226,10 @@ if command -v watchman >/dev/null 2>&1; then
     fi
     if watchman watch-del-all >/dev/null 2>&1; then
         ((cleaned_items++))
+    fi
+else
+    if [ "$VERBOSE" = true ]; then
+        echo "  Watchman not found, skipping..."
     fi
 fi
 
