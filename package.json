@@ -1,0 +1,15 @@
+{
+  "name": "cleanrn",
+  "version": "1.0.0",
+  "description": "React Native project cleaner",
+  "bin": {
+    "cleanrn": "./index.js"
+  },
+  "files": [
+    "bin",
+    "index.js"
+  ],
+  "keywords": ["react-native", "clean", "cache", "cli"],
+  "license": "MIT",
+  "author": "movila"
+}
