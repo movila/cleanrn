@@ -2,7 +2,7 @@
 # cleanrn.sh - A lightweight script to clean React Native project artifacts.
 # Author: movila
 # GitHub: https://github.com/movila/cleanrn
-# Version: 1.1.0
+# Version: 1.1.1
 
 # Removed set -e to allow graceful handling of missing files/directories
 
@@ -62,7 +62,7 @@ EOF
 
 # Function to show version
 show_version() {
-    echo "cleanrn version 1.1.0"
+    echo "cleanrn version 1.1.1"
 }
 
 # Parse command line arguments
